@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="htmlRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محاكاة البندول البسيط | Simple Pendulum Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        html {
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        :root {
+            --primary: #2563eb;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: var(--card);
+            padding: 25px 30px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        header h1 {
+            color: var(--primary);
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        header p {
+            color: var(--text-light);
+            font-size: 15px;
+        }
+        
+        .lang-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+        
+        [dir="ltr"] .lang-toggle {
+            right: 20px;
+            left: auto;
+        }
+        
+        .lang-toggle:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: minmax(280px, 380px) 1fr minmax(280px, 380px);
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        @media (max-width: 1400px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .main-grid .card:nth-child(2) {
+                grid-column: 1 / -1;
+                order: -1;
+            }
+        }
+        
+        @media (max-width: 968px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            .main-grid .card:nth-child(2) {
+                grid-column: 1;
+                order: -1;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            body {
+                padding: 10px;
+            }
+            header {
+                padding: 20px 15px;
+            }
+            header h1 {
+                font-size: 22px;
+                flex-direction: column;
+            }
+            .lang-toggle {
+                position: static;
+                margin-bottom: 15px;
+                width: 100%;
+            }
+            .card {
+                padding: 18px;
+            }
+            .simulation-area {
+                height: 350px;
+            }
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .chart-container {
+                padding: 15px;
+            }
+            .info-panel {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .theory-section {
+                padding: 20px 15px;
+            }
+            .formula-box {
+                font-size: 18px;
+                padding: 15px;
+            }
+            footer {
+                font-size: 13px;
+                padding: 15px;
+            }
+        }
+        
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .card-header h2 {
+            color: var(--primary);
+            font-size: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 18px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 14px;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-wrapper input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 5px;
+            background: var(--border);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .input-wrapper input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+        }
+        
+        .input-wrapper input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: none;
+        }
+        
+        .input-value {
+            min-width: 70px;
+            padding: 8px 12px;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .input-number {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        
+        .input-number:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+        
+        @media (max-width: 640px) {
+            .btn {
+                font-size: 14px;
+                padding: 10px 15px;
+            }
+        }
+        
+        .btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary) 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+        
+        .btn-warning:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+        
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .simulation-area {
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F2FE 50%, #F1F5F9 100%);
+            border-radius: 16px;
+            position: relative;
+            height: 500px;
+            overflow: hidden;
+            border: 3px solid var(--border);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .support {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 15px;
+            background: linear-gradient(90deg, #8B4513 0%, #654321 100%);
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(139, 69, 19, 0.4);
+            z-index: 10;
+        }
+        
+        .pendulum {
+            position: absolute;
+            top: 35px;
+            left: 50%;
+            transform-origin: top center;
+            transform: translateX(-50%);
+        }
+        
+        .string {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 3px;
+            background: linear-gradient(180deg, #4a5568 0%, #2d3748 100%);
+            transform: translateX(-50%);
+            transform-origin: top center;
+        }
+        
+        .bob {
+            position: absolute;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle at 30% 30%, #ffd93d, #f59e0b);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.6), inset 0 2px 5px rgba(255,255,255,0.5);
+            border: 2px solid #d97706;
+        }
+        
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .info-panel {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, var(--bg) 0%, #f1f5f9 100%);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid var(--border);
+        }
+        
+        .info-box-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .info-box-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .theory-section {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+        
+        .theory-section h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .formula-box {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 20px 0;
+            border: 2px solid #93c5fd;
+            direction: ltr;
+        }
+        
+        .theory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .theory-item {
+            padding: 15px;
+            background: var(--bg);
+            border-radius: 10px;
+            border-right: 4px solid var(--primary);
+        }
+        
+        [dir="ltr"] .theory-item {
+            border-right: none;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+        
+        .results-table thead {
+            background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
+            color: white;
+        }
+        
+        .results-table th,
+        .results-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        .results-table tbody tr {
+            transition: all 0.2s;
+        }
+        
+        .results-table tbody tr:nth-child(even) {
+            background: var(--bg);
+        }
+        
+        .results-table tbody tr:hover {
+            background: #eff6ff;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-top: 25px;
+        }
+        
+        .chart-container {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        
+        .chart-container h3 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: white;
+            margin-top: 30px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <button class="lang-toggle" onclick="toggleLanguage()">
+        <span id="langBtnText">English</span>
+    </button>
+    
+    <div class="container">
+        <header>
+            <h1>
+                <span>⚖️</span>
+                <span id="mainTitle">محاكاة البندول البسيط التفاعلية</span>
+            </h1>
+            <p id="mainSubtitle">تعلم نظرية البندول البسيط وتجربه تفاعليًا مع تغيير طول الخيط فقط</p>
+        </header>
+        
+        <div class="main-grid">
+            <!-- Controls Panel -->
+            <div class="card">
+                <div class="card-header">
+                    <span>🎛️</span>
+                    <h2 id="controlsTitle">إعدادات المحاكاة</h2>
+                </div>
+                
+                <div class="form-group">
+                    <label id="lengthLabel">طول الخيط L (متر)</label>
+                    <div class="input-wrapper">
+                        <input type="range" id="lengthRange" min="0.2" max="2.0" step="0.01" value="1.0" oninput="updateLength()">
+                        <div class="input-value" id="lengthValue">1.00 م</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label id="cyclesLabel">عدد الدورات المطلوبة</label>
+                    <input type="number" id="cyclesInput" class="input-number" min="1" max="50" value="10" placeholder="أدخل عدد الدورات">
+                </div>
+                
+                <div class="form-group">
+                    <label id="startDirLabel">اتجاه البداية</label>
+                    <select id="startDirSelect" class="input-number" onchange="startDirection = parseInt(this.value)">
+                        <option value="1" selected id="dirRight">إلى اليمين</option>
+                        <option value="-1" id="dirLeft">إلى اليسار</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label id="gravityLabel">التسارع الجاذبي g (م/ث²)</label>
+                    <div class="input-value" style="width: 100%; font-size: 18px;">9.81 م/ث²</div>
+                </div>
+                
+                <div class="form-group">
+                    <label id="theoreticalPeriodLabel">الفترة النظرية T (ثانية)</label>
+                    <div class="input-value" style="width: 100%; font-size: 18px;" id="theoreticalPeriod">2.007 ث</div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="startSimulation()" id="startBtn">
+                        <span>▶️</span>
+                        <span id="startBtnText">ابدأ</span>
+                    </button>
+                    <button class="btn btn-warning" onclick="pauseSimulation()" id="pauseBtn" disabled>
+                        <span>⏸️</span>
+                        <span id="pauseBtnText">إيقاف مؤقت</span>
+                    </button>
+                    <button class="btn btn-danger" onclick="resetSimulation()" id="resetBtn">
+                        <span>🔄</span>
+                        <span id="resetBtnText">إعادة تعيين</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Simulation Area -->
+            <div class="card">
+                <div class="card-header">
+                    <span>🎬</span>
+                    <h2 id="simulationTitle">محاكاة البندول</h2>
+                </div>
+                
+                <div class="simulation-area" id="simulationArea">
+                    <div class="support"></div>
+                    <div class="pendulum" id="pendulum">
+                        <div class="string" id="string"></div>
+                        <div class="bob" id="bob"></div>
+                    </div>
+                </div>
+                
+                <div class="info-panel">
+                    <div class="info-box">
+                        <div class="info-box-label" id="oscillationsLabel">عدد التذبذبات</div>
+                        <div class="info-box-value" id="oscillationsCount">0</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-box-label" id="timeLabel">الزمن المنقضي</div>
+                        <div class="info-box-value" id="timeElapsed">0.00 ث</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-box-label" id="cyclesDoneLabel">الدورات المكتملة</div>
+                        <div class="info-box-value" id="cyclesDone">0</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-box-label" id="statusLabel">الحالة</div>
+                        <div class="info-box-value" id="status">جاهز</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Results Panel -->
+            <div class="card">
+                <div class="card-header">
+                    <span>📊</span>
+                    <h2 id="resultsTitle">نتائج التجربة</h2>
+                </div>
+                
+                <button class="btn btn-secondary" onclick="addResult()" id="addResultBtn" style="width: 100%; margin-bottom: 15px;">
+                    <span>💾</span>
+                    <span id="addResultBtnText">حفظ النتيجة الحالية في الجدول</span>
+                </button>
+                
+                <button class="btn btn-danger" onclick="clearResults()" id="clearResultsBtn" style="width: 100%; margin-bottom: 15px;">
+                    <span>🗑️</span>
+                    <span id="clearResultsBtnText">مسح الجدول</span>
+                </button>
+                
+                <div style="overflow-x: auto;">
+                    <table class="results-table" id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th id="thLength">طول الخيط (م)</th>
+                                <th id="thCycles">عدد الدورات</th>
+                                <th id="thTime">الزمن (ث)</th>
+                                <th id="thPeriod">الفترة T (ث)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Theory Section -->
+        <div class="theory-section">
+            <h2>
+                <span>📚</span>
+                <span id="theoryTitle">نظرية البندول البسيط</span>
+            </h2>
+            <p id="theoryDesc" style="line-height: 1.8; color: var(--text); margin-bottom: 15px;">
+                البندول البسيط هو جسم نقطي معلق بخيط خفيف عديم الكتلة، ويمكنه التأرجح تحت تأثير الجاذبية. 
+                عندما ينحرف عن وضع الاتزان بزاوية صغيرة، يتحرك حركة توافقية بسيطة تقريبًا.
+            </p>
+            <div class="formula-box">
+                T = 2π √(L/g)
+            </div>
+            <div class="theory-grid">
+                <div class="theory-item">
+                    <strong style="color: var(--primary);" id="symbolT">T</strong>: <span id="descT">فترة التذبذب (زمن التذبذبة الكاملة)</span>
+                </div>
+                <div class="theory-item">
+                    <strong style="color: var(--primary);" id="symbolL">L</strong>: <span id="descL">طول الخيط (المسافة بين نقطة التعليق ومركز كتلة الجسم)</span>
+                </div>
+                <div class="theory-item">
+                    <strong style="color: var(--primary);" id="symbolG">g</strong>: <span id="descG">التسارع الناتج عن الجاذبية الأرضية</span>
+                </div>
+            </div>
+            <p id="theoryNote" style="margin-top: 15px; padding: 15px; background: #fef3c7; border-radius: 10px; border-right: 4px solid var(--warning); line-height: 1.7;">
+                <strong>ملاحظة:</strong> هذه العلاقة صالحة تقريبًا للزوايا الصغيرة (أقل من 15 درجة).
+            </p>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3 id="chart1Title">العلاقة بين طول الخيط والفترة T</h3>
+                <canvas id="periodChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3 id="chart2Title">العلاقة بين طول الخيط و√L</h3>
+                <canvas id="sqrtLChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p id="footerText">© 2026 محاكاة البندول البسيط التعليمية | صُمم لأغراض تعليمية | صنع بواسطة: Eng.Ahmed El-Monayer</p>
+    </footer>
+
+    <script>
+        let currentLang = 'ar';
+        let animationId = null;
+        let isRunning = false;
+        let isPaused = false;
+        let startTime = 0;
+        let pausedTime = 0;
+        let totalPausedTime = 0;
+        let oscillationCount = 0;
+        let lastAngle = 0;
+        let direction = 1;
+        let cyclesCompleted = 0;
+        let targetCycles = 10;
+        
+        const gFixed = 9.81;
+        const angle = Math.PI / 6; // 30 degrees initial angle
+        
+        let startDirection = 1; // 1 for right, -1 for left
+        
+        const pendulumEl = document.getElementById('pendulum');
+        const stringEl = document.getElementById('string');
+        const bobEl = document.getElementById('bob');
+        const lengthRange = document.getElementById('lengthRange');
+        const lengthValue = document.getElementById('lengthValue');
+        const cyclesInput = document.getElementById('cyclesInput');
+        const theoreticalPeriodEl = document.getElementById('theoreticalPeriod');
+        const oscillationsCountEl = document.getElementById('oscillationsCount');
+        const timeElapsedEl = document.getElementById('timeElapsed');
+        const cyclesDoneEl = document.getElementById('cyclesDone');
+        const statusEl = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultsBody = document.getElementById('resultsBody');
+        let startDirSelect;
+        
+        let results = [];
+        let resultCounter = 0;
+        
+        // Charts
+        let periodChart, sqrtLChart;
+        
+        function initCharts() {
+            const ctx1 = document.getElementById('periodChart').getContext('2d');
+            const ctx2 = document.getElementById('sqrtLChart').getContext('2d');
+            
+            periodChart = new Chart(ctx1, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: currentLang === 'ar' ? 'T مقابل L' : 'T vs L',
+                        data: [],
+                        backgroundColor: '#2563eb',
+                        borderColor: '#2563eb',
+                        pointRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: currentLang === 'ar' ? 'طول الخيط L (م)' : 'Length L (m)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: currentLang === 'ar' ? 'الفترة T (ث)' : 'Period T (s)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            sqrtLChart = new Chart(ctx2, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: currentLang === 'ar' ? 'T مقابل √L' : 'T vs √L',
+                        data: [],
+                        backgroundColor: '#10b981',
+                        borderColor: '#10b981',
+                        pointRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: currentLang === 'ar' ? '√L (م^0.5)' : '√L (m^0.5)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: currentLang === 'ar' ? 'الفترة T (ث)' : 'Period T (s)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateLength() {
+            const L = parseFloat(lengthRange.value);
+            lengthValue.textContent = L.toFixed(2) + (currentLang === 'ar' ? ' م' : ' m');
+            updateTheoreticalPeriod();
+            drawPendulum(0);
+        }
+        
+        function updateTheoreticalPeriod() {
+            const L = parseFloat(lengthRange.value);
+            const T = 2 * Math.PI * Math.sqrt(L / gFixed);
+            theoreticalPeriodEl.textContent = T.toFixed(3) + (currentLang === 'ar' ? ' ث' : ' s');
+        }
+        
+        function drawPendulum(angleRad) {
+            const L = parseFloat(lengthRange.value);
+            const maxLength = 400;
+            const stringLength = Math.min(L * 200, maxLength);
+            
+            stringEl.style.height = stringLength + 'px';
+            bobEl.style.top = stringLength + 'px';
+            
+            pendulumEl.style.transform = `translateX(-50%) rotate(${angleRad}rad)`;
+        }
+        
+        function startSimulation() {
+            if (isRunning && !isPaused) return;
+            
+            targetCycles = parseInt(cyclesInput.value) || 10;
+            if (targetCycles < 1) targetCycles = 1;
+            if (targetCycles > 50) targetCycles = 50;
+            cyclesInput.value = targetCycles;
+            
+            if (!isRunning) {
+                isRunning = true;
+                isPaused = false;
+                startTime = Date.now();
+                totalPausedTime = 0;
+                oscillationCount = 0;
+                cyclesCompleted = 0;
+                lastAngle = angle;
+                direction = 1;
+                statusEl.textContent = currentLang === 'ar' ? 'يعمل' : 'Running';
+                statusEl.style.color = '#10b981';
+            } else if (isPaused) {
+                isPaused = false;
+                totalPausedTime += Date.now() - pausedTime;
+                statusEl.textContent = currentLang === 'ar' ? 'يعمل' : 'Running';
+                statusEl.style.color = '#10b981';
+            }
+            
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            cyclesInput.disabled = true;
+            lengthRange.disabled = true;
+            if (startDirSelect) startDirSelect.disabled = true;
+            
+            animate();
+        }
+        
+        function pauseSimulation() {
+            if (!isRunning || isPaused) return;
+            
+            isPaused = true;
+            pausedTime = Date.now();
+            cancelAnimationFrame(animationId);
+            statusEl.textContent = currentLang === 'ar' ? 'متوقف مؤقتًا' : 'Paused';
+            statusEl.style.color = '#f59e0b';
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+        }
+        
+        function resetSimulation() {
+            isRunning = false;
+            isPaused = false;
+            cancelAnimationFrame(animationId);
+            
+            startTime = 0;
+            pausedTime = 0;
+            totalPausedTime = 0;
+            oscillationCount = 0;
+            cyclesCompleted = 0;
+            
+            oscillationsCountEl.textContent = '0';
+            timeElapsedEl.textContent = '0.00 ' + (currentLang === 'ar' ? 'ث' : 's');
+            cyclesDoneEl.textContent = '0';
+            statusEl.textContent = currentLang === 'ar' ? 'جاهز' : 'Ready';
+            statusEl.style.color = '#2563eb';
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            cyclesInput.disabled = false;
+            lengthRange.disabled = false;
+            if (startDirSelect) startDirSelect.disabled = false;
+            
+            drawPendulum(0);
+        }
+        
+        function animate() {
+            if (!isRunning || isPaused) return;
+            
+            const now = Date.now();
+            const elapsed = (now - startTime - totalPausedTime) / 1000;
+            timeElapsedEl.textContent = elapsed.toFixed(2) + (currentLang === 'ar' ? ' ث' : ' s');
+            
+            const L = parseFloat(lengthRange.value);
+            const T = 2 * Math.PI * Math.sqrt(L / gFixed);
+            const omega = 2 * Math.PI / T;
+            
+            const theta = startDirection * angle * Math.cos(omega * elapsed);
+            drawPendulum(theta);
+            
+            // Count full cycles - one complete cycle is time T
+            cyclesCompleted = Math.floor(elapsed / T);
+            cyclesDoneEl.textContent = cyclesCompleted.toString();
+            oscillationsCountEl.textContent = cyclesCompleted.toString();
+            
+            if (cyclesCompleted >= targetCycles) {
+                completeSimulation();
+                return;
+            }
+            
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        function completeSimulation() {
+            isRunning = false;
+            cancelAnimationFrame(animationId);
+            
+            const now = Date.now();
+            const elapsed = (now - startTime - totalPausedTime) / 1000;
+            timeElapsedEl.textContent = elapsed.toFixed(2) + (currentLang === 'ar' ? ' ث' : ' s');
+            
+            statusEl.textContent = currentLang === 'ar' ? 'مكتمل' : 'Completed';
+            statusEl.style.color = '#10b981';
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            cyclesInput.disabled = false;
+            lengthRange.disabled = false;
+            if (startDirSelect) startDirSelect.disabled = false;
+            
+            alert(currentLang === 'ar' 
+                ? `تم الانتهاء! اكتمل ${targetCycles} دورة في ${elapsed.toFixed(2)} ثانية` 
+                : `Completed! Finished ${targetCycles} cycles in ${elapsed.toFixed(2)} seconds`);
+        }
+        
+        function addResult() {
+            const L = parseFloat(lengthRange.value);
+            const cycles = parseInt(cyclesInput.value) || targetCycles;
+            const now = Date.now();
+            const elapsed = isRunning && !isPaused 
+                ? (now - startTime - totalPausedTime) / 1000 
+                : parseFloat(timeElapsedEl.textContent);
+            
+            const T_measured = cycles > 0 ? elapsed / cycles : 0;
+            
+            resultCounter++;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${resultCounter}</td>
+                <td>${L.toFixed(2)}</td>
+                <td>${cycles}</td>
+                <td>${elapsed.toFixed(3)}</td>
+                <td>${T_measured.toFixed(3)}</td>
+            `;
+            resultsBody.appendChild(row);
+            
+            // Add to charts
+            periodChart.data.datasets[0].data.push({x: L, y: T_measured});
+            sqrtLChart.data.datasets[0].data.push({x: Math.sqrt(L), y: T_measured});
+            periodChart.update();
+            sqrtLChart.update();
+        }
+        
+        function clearResults() {
+            resultsBody.innerHTML = '';
+            resultCounter = 0;
+            periodChart.data.datasets[0].data = [];
+            sqrtLChart.data.datasets[0].data = [];
+            periodChart.update();
+            sqrtLChart.update();
+        }
+        
+        function toggleLanguage() {
+            currentLang = currentLang === 'ar' ? 'en' : 'ar';
+            const htmlRoot = document.getElementById('htmlRoot');
+            htmlRoot.lang = currentLang;
+            htmlRoot.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+            
+            document.getElementById('langBtnText').textContent = currentLang === 'ar' ? 'English' : 'عربي';
+            
+            // Translate all elements
+            document.getElementById('mainTitle').textContent = currentLang === 'ar' ? 'محاكاة البندول البسيط التفاعلية' : 'Interactive Simple Pendulum Simulation';
+            document.getElementById('mainSubtitle').textContent = currentLang === 'ar' ? 'تعلم نظرية البندول البسيط وتجربه تفاعليًا مع تغيير طول الخيط فقط' : 'Learn simple pendulum theory through interactive simulation - change only string length';
+            document.getElementById('controlsTitle').textContent = currentLang === 'ar' ? 'إعدادات المحاكاة' : 'Simulation Settings';
+            document.getElementById('lengthLabel').textContent = currentLang === 'ar' ? 'طول الخيط L (متر)' : 'String Length L (meter)';
+            document.getElementById('cyclesLabel').textContent = currentLang === 'ar' ? 'عدد الدورات المطلوبة' : 'Number of Cycles Required';
+            document.getElementById('gravityLabel').textContent = currentLang === 'ar' ? 'التسارع الجاذبي g (م/ث²)' : 'Gravitational Accel. g (m/s²)';
+            document.getElementById('theoreticalPeriodLabel').textContent = currentLang === 'ar' ? 'الفترة النظرية T (ثانية)' : 'Theoretical Period T (seconds)';
+            document.getElementById('startDirLabel').textContent = currentLang === 'ar' ? 'اتجاه البداية' : 'Initial Direction';
+            document.getElementById('dirRight').textContent = currentLang === 'ar' ? 'إلى اليمين' : 'To the Right';
+            document.getElementById('dirLeft').textContent = currentLang === 'ar' ? 'إلى اليسار' : 'To the Left';
+            document.getElementById('startBtnText').textContent = currentLang === 'ar' ? 'ابدأ' : 'Start';
+            document.getElementById('pauseBtnText').textContent = currentLang === 'ar' ? 'إيقاف مؤقت' : 'Pause';
+            document.getElementById('resetBtnText').textContent = currentLang === 'ar' ? 'إعادة تعيين' : 'Reset';
+            document.getElementById('simulationTitle').textContent = currentLang === 'ar' ? 'محاكاة البندول' : 'Pendulum Simulation';
+            document.getElementById('oscillationsLabel').textContent = currentLang === 'ar' ? 'عدد التذبذبات' : 'Oscillations';
+            document.getElementById('timeLabel').textContent = currentLang === 'ar' ? 'الزمن المنقضي' : 'Elapsed Time';
+            document.getElementById('cyclesDoneLabel').textContent = currentLang === 'ar' ? 'الدورات المكتملة' : 'Cycles Completed';
+            document.getElementById('statusLabel').textContent = currentLang === 'ar' ? 'الحالة' : 'Status';
+            document.getElementById('resultsTitle').textContent = currentLang === 'ar' ? 'نتائج التجربة' : 'Experiment Results';
+            document.getElementById('addResultBtnText').textContent = currentLang === 'ar' ? 'حفظ النتيجة الحالية في الجدول' : 'Save Current Result to Table';
+            document.getElementById('clearResultsBtnText').textContent = currentLang === 'ar' ? 'مسح الجدول' : 'Clear Table';
+            document.getElementById('thLength').textContent = currentLang === 'ar' ? 'طول الخيط (م)' : 'Length (m)';
+            document.getElementById('thCycles').textContent = currentLang === 'ar' ? 'عدد الدورات' : 'Cycles';
+            document.getElementById('thTime').textContent = currentLang === 'ar' ? 'الزمن (ث)' : 'Time (s)';
+            document.getElementById('thPeriod').textContent = currentLang === 'ar' ? 'الفترة T (ث)' : 'Period T (s)';
+            document.getElementById('theoryTitle').textContent = currentLang === 'ar' ? 'نظرية البندول البسيط' : 'Simple Pendulum Theory';
+            document.getElementById('theoryDesc').textContent = currentLang === 'ar' 
+                ? 'البندول البسيط هو جسم نقطي معلق بخيط خفيف عديم الكتلة، ويمكنه التأرجح تحت تأثير الجاذبية. عندما ينحرف عن وضع الاتزان بزاوية صغيرة، يتحرك حركة توافقية بسيطة تقريبًا.'
+                : 'A simple pendulum is a point mass suspended by a massless, inextensible string, swinging under the influence of gravity. For small angles, it approximates simple harmonic motion.';
+            document.getElementById('descT').textContent = currentLang === 'ar' ? 'فترة التذبذب (زمن التذبذبة الكاملة)' : 'Period of oscillation (time for one complete cycle)';
+            document.getElementById('descL').textContent = currentLang === 'ar' ? 'طول الخيط (المسافة بين نقطة التعليق ومركز كتلة الجسم)' : 'Length of string (distance from pivot to center of mass)';
+            document.getElementById('descG').textContent = currentLang === 'ar' ? 'التسارع الناتج عن الجاذبية الأرضية' : 'Acceleration due to gravity';
+            document.getElementById('theoryNote').innerHTML = currentLang === 'ar'
+                ? '<strong>ملاحظة:</strong> هذه العلاقة صالحة تقريبًا للزوايا الصغيرة (أقل من 15 درجة).'
+                : '<strong>Note:</strong> This relation is valid approximately for small angles (less than 15 degrees).';
+            document.getElementById('chart1Title').textContent = currentLang === 'ar' ? 'العلاقة بين طول الخيط والفترة T' : 'Relationship between Length L and Period T';
+            document.getElementById('chart2Title').textContent = currentLang === 'ar' ? 'العلاقة بين طول الخيط و√L' : 'Relationship between Length L and √L';
+            document.getElementById('footerText').textContent = currentLang === 'ar' ? '© 2026 محاكاة البندول البسيط التعليمية | صُمم لأغراض تعليمية | صنع بواسطة: Eng.Ahmed El-Monayer' : '© 2026 Educational Simple Pendulum Simulation | Designed for Educational Purposes | Created by: Eng.Ahmed El-Monayer';
+            
+            // Update units
+            updateLength();
+            updateTheoreticalPeriod();
+            if (isRunning) {
+                statusEl.textContent = currentLang === 'ar' ? 'يعمل' : 'Running';
+            } else if (isPaused) {
+                statusEl.textContent = currentLang === 'ar' ? 'متوقف مؤقتًا' : 'Paused';
+            } else {
+                statusEl.textContent = currentLang === 'ar' ? 'جاهز' : 'Ready';
+            }
+            
+            // Update charts labels
+            periodChart.data.datasets[0].label = currentLang === 'ar' ? 'T مقابل L' : 'T vs L';
+            periodChart.options.scales.x.title.text = currentLang === 'ar' ? 'طول الخيط L (م)' : 'Length L (m)';
+            periodChart.options.scales.y.title.text = currentLang === 'ar' ? 'الفترة T (ث)' : 'Period T (s)';
+            sqrtLChart.data.datasets[0].label = currentLang === 'ar' ? 'T مقابل √L' : 'T vs √L';
+            sqrtLChart.options.scales.x.title.text = currentLang === 'ar' ? '√L (م^0.5)' : '√L (m^0.5)';
+            sqrtLChart.options.scales.y.title.text = currentLang === 'ar' ? 'الفترة T (ث)' : 'Period T (s)';
+            periodChart.update();
+            sqrtLChart.update();
+        }
+        
+        // Initialize
+        window.onload = function() {
+            startDirSelect = document.getElementById('startDirSelect');
+            initCharts();
+            updateLength();
+            drawPendulum(0);
+        };
+    </script>
+</body>
+</html>
